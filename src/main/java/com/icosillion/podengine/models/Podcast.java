@@ -10,8 +10,6 @@ import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 
-import net.pempek.unicode.UnicodeBOMInputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -44,18 +42,15 @@ public class Podcast {
     public Podcast(URL feed) throws InvalidFeedException, MalformedFeedException {
         URLConnection ic = null;
         InputStream is = null;
-        UnicodeBOMInputStream ubis = null;
 
         try {
             ic = feed.openConnection();
             ic.setRequestProperty("User-Agent", "PodEngine/2.0");
             is = ic.getInputStream();
-            ubis = new UnicodeBOMInputStream(is);
-            ubis.skipBOM();
 
             this.feedURL = feed;
             this.resolvedURL = ic.getURL();
-            this.xmlData = IOUtils.toString(ubis);
+            this.xmlData = IOUtils.toString(is);
             this.document = DocumentHelper.parseText(xmlData);
             this.rootElement = this.document.getRootElement();
             this.channelElement = this.rootElement.element("channel");
@@ -67,7 +62,6 @@ public class Podcast {
         } catch (DocumentException e) {
             throw new InvalidFeedException("Error parsing feed XML.", e);
         } finally {
-            IOUtils.closeQuietly(ubis);
             IOUtils.closeQuietly(is);
         }
     }
