@@ -5,18 +5,16 @@ import com.icosillion.podengine.exceptions.InvalidFeedException;
 import com.icosillion.podengine.exceptions.MalformedFeedException;
 import com.icosillion.podengine.utils.DateUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BOMInputStream;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-
-import net.pempek.unicode.UnicodeBOMInputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.*;
 
 public class Podcast {
@@ -42,20 +40,23 @@ public class Podcast {
     private List<Episode> episodes;
 
     public Podcast(URL feed) throws InvalidFeedException, MalformedFeedException {
-        URLConnection ic = null;
+        HttpURLConnection ic = null;
         InputStream is = null;
-        UnicodeBOMInputStream ubis = null;
+        BOMInputStream bomInputStream = null;
 
         try {
-            ic = feed.openConnection();
-            ic.setRequestProperty("User-Agent", "PodEngine/2.0");
+            //Open Connection
+            ic = (HttpURLConnection) feed.openConnection();
+            ic.setInstanceFollowRedirects(true);
+            ic.setRequestProperty("User-Agent", "PodEngine/2.2");
             is = ic.getInputStream();
-            ubis = new UnicodeBOMInputStream(is);
-            ubis.skipBOM();
+
+            //Create BOMInputStream to strip any Byte Order Marks
+            bomInputStream = new BOMInputStream(is, false);
 
             this.feedURL = feed;
             this.resolvedURL = ic.getURL();
-            this.xmlData = IOUtils.toString(ubis);
+            this.xmlData = IOUtils.toString(bomInputStream);
             this.document = DocumentHelper.parseText(xmlData);
             this.rootElement = this.document.getRootElement();
             this.channelElement = this.rootElement.element("channel");
@@ -67,7 +68,7 @@ public class Podcast {
         } catch (DocumentException e) {
             throw new InvalidFeedException("Error parsing feed XML.", e);
         } finally {
-            IOUtils.closeQuietly(ubis);
+            IOUtils.closeQuietly(bomInputStream);
             IOUtils.closeQuietly(is);
         }
     }

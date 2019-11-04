@@ -7,8 +7,7 @@ import org.dom4j.QName;
 public class ITunesOwner {
 
     private final Element ownerElement;
-    protected final Namespace iTunesNamespace;
-
+    private final Namespace iTunesNamespace;
     private String name, email;
 
     public ITunesOwner(Element ownerElement) {
